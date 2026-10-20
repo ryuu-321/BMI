@@ -115,11 +115,11 @@ class BmiFrame extends JFrame {
 
         JPanel grid = new JPanel(new GridLayout(5, 2, 12, 8));
         grid.setOpaque(false);
-        addRow(grid, "Name", nameValue);
-        addRow(grid, "Weight", weightValue);
-        addRow(grid, "Height", heightValue);
-        addRow(grid, "BMI", bmiValue);
-        addRow(grid, "Category", categoryValue);
+        addRow(grid, "Name:", nameValue);
+        addRow(grid, "Weight:", weightValue);
+        addRow(grid, "Height:", heightValue);
+        addRow(grid, "BMI:", bmiValue);
+        addRow(grid, "Categor:", categoryValue);
         bmiValue.setFont(BOLD);
         categoryValue.setFont(BOLD);
 
