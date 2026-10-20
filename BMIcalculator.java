@@ -188,14 +188,13 @@ class BmiFrame extends JFrame {
 
     // Each category has its own color
     private Color colorFor(String category) {
-        switch (category) {
-            case "Underweight": return new Color(0x2F7FC1); // blue
-            case "Normal":      return new Color(0x2E9A62); // green
-            case "Overweight":  return new Color(0xD08A1E); // orange
-            default:            return new Color(0xC9482B); // red
-        }
-    }
-
+    return switch (category) {
+        case "Underweight" -> new Color(0x2F7FC1); // blue
+        case "Normal"      -> new Color(0x2E9A62); // green
+        case "Overweight"  -> new Color(0xD08A1E); // orange
+        default            -> new Color(0xC9482B); // red
+    };
+}
     // ----- Small helper methods to keep the code short -----
     private JLabel label(String text) {
         JLabel l = new JLabel(text);
