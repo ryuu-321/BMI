@@ -1,229 +1,202 @@
 import java.awt.*;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.format.DateTimeParseException;
 import javax.swing.*;
 
-// ===== CLASS 1: Person (holds the data) =====
-// Encapsulation: fields are private and final, accessed only through getters.
-class Person {
+// OOP: this class holds the data and the BMI logic
+class BMIRecord {
     private final String name;
-    private final double weightKg;
-    private final double heightCm;
+    private final String sex;
+    private final double weight;      // kg
+    private final double heightCm;    // cm
+    private final LocalDate birthDate;
 
-    public Person(String name, double weightKg, double heightCm) {
+    public BMIRecord(String name, String sex, LocalDate birthDate, double weight, double heightCm) {
         this.name = name;
-        this.weightKg = weightKg;
+        this.sex = sex;
+        this.birthDate = birthDate;
+        this.weight = weight;
         this.heightCm = heightCm;
     }
 
-    public String getName()     { return name; }
-    public double getWeightKg() { return weightKg; }
-    public double getHeightCm() { return heightCm; }
-}
-
-// ===== CLASS 2: BmiLogic (does the computing) =====
-class BmiLogic {
-    private final Person person;
-
-    public BmiLogic(Person person) {
-        this.person = person;
+    public int getAge() {
+        return Period.between(birthDate, LocalDate.now()).getYears();
     }
 
-    // BMI = weight / (height in meters)^2
-    public double calculateBmi() {
-        double heightM = person.getHeightCm() / 100;
-        return person.getWeightKg() / (heightM * heightM);
+    public double getBmi() {
+        double heightM = heightCm / 100;
+        return weight / (heightM * heightM);
     }
 
     public String getCategory() {
-        double bmi = calculateBmi();
+        double bmi = getBmi();
         if (bmi < 18.5) return "Underweight";
         else if (bmi < 25) return "Normal";
         else if (bmi < 30) return "Overweight";
         else return "Obese";
     }
+
+    // Age and birthdate are shown inside the Category line
+    public String getResultText() {
+        return String.format("Name     : %s\n", name)
+             + String.format("Sex      : %s\n", sex)
+             + String.format("Weight   : %.2f kg\n", weight)
+             + String.format("Height   : %.2f cm\n", heightCm)
+             + String.format("BMI      : %.2f\n", getBmi())
+             + String.format("Category : %s (Age: %d, Birthdate: %s)",
+                             getCategory(), getAge(), birthDate);
+    }
 }
 
-// ===== CLASS 3: BmiFrame (the GUI window) =====
-// Inheritance: BmiFrame extends JFrame, so it IS a window.
-class BmiFrame extends JFrame {
-    // Colors and fonts used for the design
-    private static final Color PRIMARY = new Color(0x1F6F8B);
-    private static final Color BACKGROUND = new Color(0xF4F7FA);
-    private static final Color MUTED = new Color(0x667085);
-    private static final Font BODY = new Font(Font.SANS_SERIF, Font.PLAIN, 15);
-    private static final Font BOLD = new Font(Font.SANS_SERIF, Font.BOLD, 15);
+// OOP: this class is the GUI window
+public class BMIcalculator extends JFrame {
+    private final JTextField nameField = new JTextField();
+    private final JTextField birthField = new JTextField();
+    private final JComboBox<String> sexBox = new JComboBox<>(new String[]{"Male", "Female"});
+    private final JTextField weightField = new JTextField();
+    private final JTextField heightField = new JTextField();
+    private final JLabel banner = new JLabel(" ", SwingConstants.CENTER);
+    private final JTextArea resultArea = new JTextArea(7, 30);
 
-    // INPUT components
-    private final JTextField nameField   = new JTextField(14);
-    private final JTextField weightField = new JTextField(14);
-    private final JTextField heightField = new JTextField(14);
-
-    // OUTPUT components
-    private final JLabel errorLabel    = new JLabel("Error: enter a weight and height above 0.");
-    private final JLabel nameValue     = new JLabel();
-    private final JLabel weightValue   = new JLabel();
-    private final JLabel heightValue   = new JLabel();
-    private final JLabel bmiValue      = new JLabel();
-    private final JLabel categoryValue = new JLabel();
-    private final JPanel resultCard    = new JPanel(new BorderLayout(0, 10));
-
-    public BmiFrame() {
-        super("BMI Calculator");
+    public BMIcalculator() {
+        setTitle("BMI Calculator");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setLayout(new BorderLayout(10, 10));
 
-        // ----- Header -----
-        JLabel title = new JLabel("BMI Calculator");
-        title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 24));
-        title.setForeground(Color.WHITE);
-        JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        header.setBackground(PRIMARY);
-        header.setBorder(BorderFactory.createEmptyBorder(18, 24, 18, 24));
-        header.add(title);
+        // Title
+        JLabel title = new JLabel("BMI Calculator", SwingConstants.CENTER);
+        title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
+        title.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
 
-        // ----- Form (INPUT) -----
-        JPanel form = new JPanel(new GridLayout(3, 2, 12, 12));
-        form.setOpaque(false);
-        form.add(label("Name"));        form.add(styleField(nameField));
-        form.add(label("Weight (kg)")); form.add(styleField(weightField));
-        form.add(label("Height (cm)")); form.add(styleField(heightField));
-        form.setAlignmentX(Component.LEFT_ALIGNMENT);
+        // Input panel
+        JPanel inputPanel = new JPanel(new GridLayout(6, 2, 8, 8));
+        inputPanel.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
+        inputPanel.add(new JLabel("Name:"));
+        inputPanel.add(nameField);
+        inputPanel.add(new JLabel("Birthdate (YYYY-MM-DD):"));
+        inputPanel.add(birthField);
+        inputPanel.add(new JLabel("Sex:"));
+        inputPanel.add(sexBox);
+        inputPanel.add(new JLabel("Weight (kg):"));
+        inputPanel.add(weightField);
+        inputPanel.add(new JLabel("Height (cm):"));
+        inputPanel.add(heightField);
 
-        // ----- Button -----
-        JButton button = new JButton("Calculate");
-        button.setFont(BOLD);
-        button.setBackground(PRIMARY);
-        button.setForeground(Color.WHITE);
-        button.setOpaque(true);
-        button.setBorderPainted(false);
-        button.setFocusPainted(false);
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
-        button.setPreferredSize(new Dimension(100, 42));
-        button.setAlignmentX(Component.LEFT_ALIGNMENT);
-        button.addActionListener(e -> onCalculate()); // click -> run onCalculate()
+        // Buttons
+        JButton calcButton = new JButton("Calculate");
+        JButton clearButton = new JButton("Clear");
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 8, 0));
+        buttonPanel.add(calcButton);
+        buttonPanel.add(clearButton);
+        inputPanel.add(new JLabel());
+        inputPanel.add(buttonPanel);
 
-        // ----- Error message (hidden at first) -----
-        errorLabel.setFont(BODY);
-        errorLabel.setForeground(new Color(0xC9482B));
-        errorLabel.setBorder(BorderFactory.createEmptyBorder(12, 0, 0, 0));
-        errorLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        errorLabel.setVisible(false);
+        // Colored banner + result text
+        banner.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
+        banner.setForeground(Color.WHITE);
+        banner.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        // ----- Result card (OUTPUT, hidden at first) -----
-        JLabel resultTitle = new JLabel("BMI RESULT");
-        resultTitle.setFont(BOLD);
-        resultTitle.setForeground(PRIMARY);
+        resultArea.setEditable(false);
+        resultArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+        resultArea.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
 
-        JPanel grid = new JPanel(new GridLayout(5, 2, 12, 8));
-        grid.setOpaque(false);
-        addRow(grid, "Name:", nameValue);
-        addRow(grid, "Weight:", weightValue);
-        addRow(grid, "Height:", heightValue);
-        addRow(grid, "BMI:", bmiValue);
-        addRow(grid, "Categor:", categoryValue);
-        bmiValue.setFont(BOLD);
-        categoryValue.setFont(BOLD);
+        JPanel resultPanel = new JPanel(new BorderLayout(0, 8));
+        resultPanel.setBorder(BorderFactory.createEmptyBorder(0, 15, 15, 15));
+        resultPanel.add(banner, BorderLayout.NORTH);
+        resultPanel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
 
-        resultCard.setBackground(Color.WHITE);
-        resultCard.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(0xD9E0E7)),
-                BorderFactory.createEmptyBorder(14, 16, 14, 16)));
-        resultCard.add(resultTitle, BorderLayout.NORTH);
-        resultCard.add(grid, BorderLayout.CENTER);
-        resultCard.setAlignmentX(Component.LEFT_ALIGNMENT);
-        resultCard.setVisible(false);
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.add(title, BorderLayout.NORTH);
+        topPanel.add(inputPanel, BorderLayout.CENTER);
 
-        // ----- Put everything together -----
-        JPanel body = new JPanel();
-        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
-        body.setBackground(BACKGROUND);
-        body.setBorder(BorderFactory.createEmptyBorder(22, 24, 24, 24));
-        body.add(form);
-        body.add(Box.createVerticalStrut(18));
-        body.add(button);
-        body.add(errorLabel);
-        body.add(Box.createVerticalStrut(16));
-        body.add(resultCard);
+        add(topPanel, BorderLayout.NORTH);
+        add(resultPanel, BorderLayout.CENTER);
 
-        JPanel root = new JPanel(new BorderLayout());
-        root.add(header, BorderLayout.NORTH);
-        root.add(body, BorderLayout.CENTER);
+        calcButton.addActionListener(e -> calculate());
+        clearButton.addActionListener(e -> clearAll());
+        getRootPane().setDefaultButton(calcButton);   // Enter key = Calculate
 
-        setContentPane(root);
-        getRootPane().setDefaultButton(button); // Enter key also calculates
         pack();
-        setMinimumSize(new Dimension(380, getHeight()));
         setLocationRelativeTo(null);
     }
 
-    // Runs when the button is clicked: INPUT -> PROCESS -> OUTPUT
-    private void onCalculate() {
+    private void showBanner(String text, Color color) {
+        banner.setText(text);
+        banner.setBackground(color);
+        banner.setOpaque(true);
+        banner.repaint();
+    }
+
+    private void hideBanner() {
+        banner.setText(" ");
+        banner.setOpaque(false);
+        banner.repaint();
+    }
+
+    private Color colorFor(String category) {
+        switch (category) {
+            case "Underweight": return new Color(52, 152, 219);   // blue
+            case "Normal":      return new Color(39, 174, 96);    // green
+            case "Overweight":  return new Color(243, 156, 18);   // orange
+            default:            return new Color(192, 57, 43);    // red
+        }
+    }
+
+    private void showError(String message) {
+        hideBanner();
+        resultArea.setText(message);
+    }
+
+    private void clearAll() {
+        nameField.setText("");
+        birthField.setText("");
+        sexBox.setSelectedIndex(0);
+        weightField.setText("");
+        heightField.setText("");
+        resultArea.setText("");
+        hideBanner();
+        nameField.requestFocus();
+    }
+
+    private void calculate() {
         try {
-            // INPUT
             String name = nameField.getText().trim();
+            String sex = (String) sexBox.getSelectedItem();
+            LocalDate birthDate = LocalDate.parse(birthField.getText().trim());
             double weight = Double.parseDouble(weightField.getText().trim());
             double height = Double.parseDouble(heightField.getText().trim());
-            if (weight <= 0 || height <= 0) throw new NumberFormatException();
 
-            // PROCESS (create objects)
-            Person person = new Person(name, weight, height);
-            BmiLogic calc = new BmiLogic(person);
-            String category = calc.getCategory();
+            if (name.isEmpty()) {
+                showError("Please enter a name.");
+                return;
+            }
+            if (birthDate.isAfter(LocalDate.now())) {
+                showError("Birthdate cannot be in the future.");
+                return;
+            }
+            if (weight <= 0 || height <= 0) {
+                showError("Weight and height must be greater than 0.");
+                return;
+            }
 
-            // OUTPUT
-            nameValue.setText(name.isEmpty() ? "-" : name);
-            weightValue.setText(String.format("%.2f kg", weight));
-            heightValue.setText(String.format("%.2f cm", height));
-            bmiValue.setText(String.format("%.2f", calc.calculateBmi()));
-            categoryValue.setText(category);
-            categoryValue.setForeground(colorFor(category));
-
-            errorLabel.setVisible(false);
-            resultCard.setVisible(true);
+            BMIRecord record = new BMIRecord(name, sex, birthDate, weight, height);
+            showBanner(String.format("BMI %.2f  -  %s", record.getBmi(), record.getCategory()),
+                       colorFor(record.getCategory()));
+            resultArea.setText(record.getResultText());
+        } catch (DateTimeParseException ex) {
+            showError("Birthdate must look like 2000-05-31.");
         } catch (NumberFormatException ex) {
-            resultCard.setVisible(false);
-            errorLabel.setVisible(true);
+            showError("Please enter valid numbers for weight and height.");
         }
-        pack();
     }
 
-    // Each category has its own color
-   private Color colorFor(String category) {
-    return switch (category) {
-        case "Underweight:" -> new Color(0x2F7FC1); // blue
-        case "Normal:"      -> new Color(0x2E9A62); // green
-        case "Overweight:"  -> new Color(0xD08A1E); // orange
-        default            -> new Color(0xC9482B); // red
-    };
-}
-
-    // ----- Small helper methods to keep the code short -----
-    private JLabel label(String text) {
-        JLabel l = new JLabel(text);
-        l.setFont(BODY);
-        return l;
-    }
-
-    private JTextField styleField(JTextField field) {
-        field.setFont(BODY);
-        field.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(0xC5CDD6)),
-                BorderFactory.createEmptyBorder(6, 8, 6, 8)));
-        return field;
-    }
-
-    private void addRow(JPanel grid, String labelText, JLabel value) {
-        JLabel l = label(labelText);
-        l.setForeground(MUTED);
-        value.setFont(BODY);
-        grid.add(l);
-        grid.add(value);
-    }
-}
-
-// ===== MAIN CLASS: starts the program =====
-// The class name must match the file name: BMIcalculator.java
-public class BMIcalculator {
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new BmiFrame().setVisible(true));
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ignored) {
+            // fall back to the default look
+        }
+        SwingUtilities.invokeLater(() -> new BMIcalculator().setVisible(true));
     }
 }
